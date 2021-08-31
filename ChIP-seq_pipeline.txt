@@ -1,0 +1,117 @@
+ChIP-seq pipeline
+
+Quality filtering and mapping 
+
+###Trim reads using fastp
+fastp -i "input_read1.fastq.gz" -I "input_read2.fastq.gz" -o "trimmed_output_read1.fastq.gz" -O "trimmed_output_read2.fastq.gz" -j "log".json -h "log".html
+
+###Map reads using bowtie2 (creates a .sam output file)
+bowtie2 -x “directory_to_BL21_reference_genome_file” -1 “trimmed_output_read1.fastq.gz” -2 “trimmed_output_read1.fastq.gz” -S “output.sam”
+
+###Convert .sam into .bam file using samtools
+###Add samtools to PATH: 
+export PATH=/Users/florian/samtools-1.11/bin:$PATH
+
+samtools -view -b “input.sam” > “output_directory”
+
+###Sort the .bam files using samtools
+samtools sort -o output_directory “input.bam”
+
+###Index the aligned and sorted .bam files using samtools
+samtools index -b “input.bam” “output.bam.bai”
+
+###Eliminate multi-mapping reads using samtools (retains only uniquely mapping reads); 
+###uses a MAPQ score of 10 as a cutoff
+samtools view -bq 10 “input.bam” > “output_directory”
+
+###Create index files for the trimmed, aligned, sorted and uniquely mapping reads using samtools
+samtools index -b “input.bam” “output.bam.bai”
+
+Normalization
+
+###Normalize bam to bigwig using deepTools (RPKM normalization using bamCoverage command)
+###two regions in the genome are masked with “Ns” - that’s why we use a length of 4,555,661 bp and not the full length.
+###bs is bin size. 1 is used to get high resolution and the BL21 genome is small enough to compute this.
+bamCoverage --normalizeUsing RPKM --effectiveGenomeSize 4555661 -bs 1 -b “input.bam” -o “output.bw”
+
+Further analysis (Diego)
+
+###Peaking calling with Macs3
+macs3 callpeak -t target.bam -c input.bam -n "TnsC_target4_peak" -g 4500000 --nomodel --extsize 400 -q 0.05 -B --outdir "TnsC_target4_peak"
+
+###MEME-Chip
+Installation:
+
+conda install -c bioconda meme
+
+Commands: 
+
+meme-chip [input.fasta] -o [output_dir]
+
+input.fasta is a FASTA of called MACS3 peaks +/- 100bp. 
+output_dir is the name of output directory 
+
+Outputs:
+
+There are various outputs from MEME-ChIP but the relevant ones is index.html, fimo_out_[#]/fimo.txt and meme_out. 
+
+index.html is a visual overview of the MEME-Chip analysis and can be opened in a browser 
+
+fimo_out_[#] is a directory which contains the conserved regions of the #th found motif
+
+fimo.txt is a file containing the location and sequence of the conserved motif 
+
+meme_out is a directory which contains consensus logos of the detected motifs 
+
+###Make heatmap matrix with deeptools
+computeMatrix reference-point -S /Users/drg/Desktop/Sternberg_lab/ChIP-seq_files_for_DRG/bw_files_normalized/A4427_121820_Cas8_Rep1_bamCompare-normalized-ratio.bw   -R /Users/drg/Desktop/Sternberg_lab/ChIP-seq_files_for_DRG/analysis/target4_macs3/Cas8_rep1_target4_macs3_peak/Cas8_rep1_target4_macs3_summits.bed -a 1000 -b 1000 -out Cas8_rep1_target4_matrix -bs 1 -p 6 --missingDataAsZero
+
+
+###Plot heatmap with deeptools
+plotHeatmap -m Cas8_rep1_target4_matrix --colorMap 'viridis' --heatmapHeight 25 --heatmapWidth 5 -out Cas8_rep1_target4_heatmap.png --whatToShow 'plot, heatmap and colorbar' --sortUsing max --zMax 5 --zMin 1 
+
+
+###Plot profile
+plotProfile -m TnsC_rep2_target4_matrix -out TnsC_rep2_target4_profile.png --yMax 5
+
+
+###Venn diagrams in R
+TnsB_bed <- read.table("/Users/drg/Desktop/Sternberg_lab/ChIP-seq_files_for_DRG/analysis/tSL0287_macs3/TnsB_rep1_tSL0287_macs3_peak/TnsB_rep1_tSL0287_macs3_peaks.txt", header=TRUE)
+
+TnsC_bed <- read.table("/Users/drg/Desktop/Sternberg_lab/ChIP-seq_files_for_DRG/analysis/tSL0287_macs3/TnsC_rep1_tSL0287_macs3_peak/TnsC_rep1_tSL0287_macs3_peaks.txt", header=TRUE)
+
+cas8_bed <- read.table("/Users/drg/Desktop/Sternberg_lab/ChIP-seq_files_for_DRG/analysis/tSL0287_macs3/Cas8_rep1_tSL0287_macs3_peak/Cas8_rep1_tSL0287_macs3_peaks.txt", header=TRUE)
+
+
+cas8 <- GRanges(
+    cas8_bed$chr,
+    IRanges(cas8_bed$star, cas8_bed$end),
+    strand="*"
+)
+
+tnsB <- GRanges(
+    TnsB_bed$chr,
+    IRanges(TnsB_bed$star, TnsB_bed$end),
+    strand="*"
+)
+
+tnsC <- GRanges(
+    TnsC_bed$chr,
+    IRanges(TnsC_bed$star, TnsC_bed$end),
+    strand="*"
+)
+
+ovlHits <- findOverlapsOfPeaks(cas8, tnsC, tnsB)
+
+png('target4_rep1_new_venn.png', pointsize=10, width=500, height=500, res=300)
+
+makeVennDiagram(ovlHits_t4, totalTest=1e+2,
+                fill=c("#CC79A7", "#56B4E9", "#F0E442"), # circle fill color
+                col=c("#D55E00", "#0072B2", "#E69F00"), #circle border color
+                cat.col=c("#D55E00", "#0072B2", "#E69F00"))makeVennDiagram(ovlHits_t4, totalTest=1e+2,
+                fill=c("#CC79A7", "#56B4E9", "#F0E442"), # circle fill color
+                col=c("#D55E00", "#0072B2", "#E69F00"), #circle border color
+                cat.col=c("#D55E00", "#0072B2", "#E69F00"))
+
+
+dev.off()
