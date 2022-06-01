@@ -1,7 +1,7 @@
 #### Hoffmann_Kim_Beh_etal_2022
 
 This repository contains the code for analyzing and interpreting Illumina sequencing data for chromatin immunoprecipitation (ChIP). 
-This README files provides information on all upladed documents files. 
+This README files provides information on all upladed documents and files. 
 
 # File descriptions
 
