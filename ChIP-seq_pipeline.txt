@@ -1,4 +1,4 @@
-## ChIP-seq pipeline
+ChIP-seq pipeline
 
 Quality filtering and mapping 
 
