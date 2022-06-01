@@ -11,7 +11,7 @@ and the indexed .fai files for each version of the reference genome.
 The addition 'masked' in the file names indicates that two genomic lacZ/lacI regions and flanking regions, which are partially identical to plasmid-encoded sequences, were masked in all alignments (genomic coordinates 335,600-337,101 and 748,601-750,390).
 
 ### ChIP-seq_pipeline.txt
-This file states the bioinformatic steps that were performed in the ChIP-seq analysis.
+This file states all bioinformatic steps and commands that were performed in the ChIP-seq analysis.
 
 ### ChIPseq_analysis_script_paired-end_reads_submission.sh
 This file is a shell script and carries out quality filtering and read mapping (see ChIP-seq_pipeline.txt) for paired-end sequencing runs for ChIP-seq data analysis. Please refer to the well-annotated code for requirements, input/output files, and parameters.
