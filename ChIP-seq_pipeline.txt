@@ -34,7 +34,7 @@ Normalization
 ###bs is bin size. 1 is used to get high resolution and the BL21 genome is small enough to compute this.
 bamCoverage --normalizeUsing RPKM --effectiveGenomeSize 4555661 -bs 1 -b “input.bam” -o “output.bw”
 
-Further analysis (Diego)
+Further analysis
 
 ###Peaking calling with Macs3
 macs3 callpeak -t target.bam -c input.bam -n "TnsC_target4_peak" -g 4500000 --nomodel --extsize 400 -q 0.05 -B --outdir "TnsC_target4_peak"
